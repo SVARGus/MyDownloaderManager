@@ -1,0 +1,162 @@
+﻿<Window x:Class="MyDownloaderManager.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MyDownloaderManager"
+        mc:Ignorable="d"
+        Title="Downloader Manager" Height="600" Width="1200"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <Window.Resources>
+        <!-- Тестовый экземпляр DownloadItem для дизайна -->
+        <local:DownloadItem x:Key="SampleItem"
+                            Url="https://example.com/video.mp4"
+                            FilePath="C:\Downloads"
+                            NameFile="video.mp4"
+                            Status="Downloading"
+                            StartLoading="2025-05-08T15:30:00"
+                            EndLoading="2025-05-08T15:35:04">
+            <local:DownloadItem.Tags>
+                <sys:String>video</sys:String>
+                <sys:String>mp4</sys:String>
+                <sys:String>demo</sys:String>
+            </local:DownloadItem.Tags>
+        </local:DownloadItem>
+    </Window.Resources>
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="1*"/>
+            <RowDefinition Height="2*"/>
+            <RowDefinition Height="2*"/>
+        </Grid.RowDefinitions>
+        <Viewbox Grid.Row="0">
+            <Grid Margin="5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="420"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                
+                <TextBlock Grid.Column="0" Grid.Row="0" Text="URL ссылка: " HorizontalAlignment="Right" VerticalAlignment="Center" 
+                           FontSize="24" FontWeight="Bold" Margin="5"/>
+                <TextBox Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="2" Width="450" Height="40" Margin="5" x:Name="TextBoxUrl"/>
+                
+                <TextBlock Grid.Column="0" Grid.Row="1" Text="Дириктория сохранения: " HorizontalAlignment="Right" VerticalAlignment="Center" 
+                           FontSize="24" FontWeight="Bold" Margin="5"/>
+                <TextBox Grid.Column="1" Grid.Row="1" Width="400" Height="40" Margin="5" x:Name="TextBoxFilePath"/>
+                <Button Grid.Column="2" Grid.Row="1" Content="Выбрать" x:Name="ButtonSelectDirectory" Click="ButtonSelectDirectory_Click"/>
+
+                <TextBlock Grid.Column="3" Grid.Row="0" Text="Название файла" HorizontalAlignment="Right" VerticalAlignment="Center" 
+                           FontSize="24" FontWeight="Bold" Margin="5"/>
+                <TextBox Grid.Column="4" Grid.Row="0" Width="400" Height="40" Margin="5" x:Name="TextBoxFileName"/>
+
+                <TextBlock Grid.Column="3" Grid.Row="1" Text="Тэги: " HorizontalAlignment="Center" VerticalAlignment="Center"
+                           FontSize="24" FontWeight="Bold" Margin="5"/>
+                <TextBox Grid.Column="4" Grid.Row="1" Width="400" Height="40" Margin="5" x:Name="TextBoxTags"/>
+
+                <Button Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="5" Content="Начать скачивание" FontSize="24" 
+                        FontWeight="Bold" Width="300" Margin="5" x:Name="ButtonStartDownloading" Click="ButtonStartDownloading_Click" />
+            </Grid>
+        </Viewbox>
+
+        <ListBox x:Name="ListBoxDownloads" Grid.Row="1" Margin="10" ItemsSource="{Binding Items}"
+                 SelectionChanged="ListBoxDownloads_SelectionChanged">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid Margin="5" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="5*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Text="{Binding NameFile}" TextTrimming="CharacterEllipsis" MaxWidth="200" VerticalAlignment="Center"/>
+
+                        <ProgressBar Grid.Column="1" Height="20" VerticalAlignment="Center" Value="{Binding Progress}" Maximum="100"/>
+
+                        <Button Grid.Column="2" Margin="5,0" Padding="5" Content="⏸" ToolTip="Пауза" x:Name="ButtonPause" Click="ButtonPause_Click"/>
+
+                        <Button Grid.Column="3" Margin="5,0" Padding="5" Content="▶" ToolTip="Возобновить" x:Name="ButtonResume" Click="ButtonResume_Click"/>
+
+                        <Button Grid.Column="4" Margin="5,0" Padding="5" Content="🗑" ToolTip="Удалить" x:Name="ButtonDelete" Click="ButtonDelete_Click"/>
+
+                        <Button Grid.Column="5" Margin="5,0" Padding="5" Content="⟳" ToolTip="Перезапустить" x:Name="ButtonRestart" Click="ButtonRestart_Click"/>
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Viewbox Grid.Row="2" x:Name="AboutDownloaderFile" d:DataContext="{StaticResource SampleItem}" >
+            <Border Padding="10" Width="1000">
+                <StackPanel>
+                    <TextBlock Text="Информация о файле" FontSize="20" FontWeight="Bold" Margin="0, 0, 0, 10"/>
+                    <Grid Margin="0, 0, 0, 10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition MinWidth="200" Width="Auto"/>
+                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition MinWidth="200" Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Имя файла:" FontWeight="Bold"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding NameFile}"/>
+
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="Директория:" FontWeight="Bold"/>
+                        <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding FilePath}"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="URL:" FontWeight="Bold"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding Url}" TextWrapping="Wrap"/>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Статус:" FontWeight="Bold"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Status}"/>
+
+                        <TextBlock Grid.Row="2" Grid.Column="2" Text="Теги:" FontWeight="Bold"/>
+                        <ItemsControl Grid.Row="2" Grid.Column="3"
+                                      ItemsSource="{Binding Tags}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="2" Padding="2" Background="#DDD" CornerRadius="3">
+                                        <TextBlock Text="{Binding}"/>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Начато:" FontWeight="Bold"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding StartLoading, StringFormat=G}"/>
+
+                        <TextBlock Grid.Row="3" Grid.Column="2" Text="Завершено:" FontWeight="Bold"/>
+                        <TextBlock Grid.Row="3" Grid.Column="3" Text="{Binding EndLoading, StringFormat=G}"/>
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="ButtonRename" Content="Переименовать" Margin="5" Padding="10,5" Width="150" IsEnabled="True" Click="ButtonRename_Click"/>
+                        <Button x:Name="ButtonMove" Content="Переместить" Margin="5" Padding="10,5" Width="150" IsEnabled="True" Click="ButtonMove_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Viewbox>
+    </Grid>
+</Window>
