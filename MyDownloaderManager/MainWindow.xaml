@@ -81,7 +81,7 @@
                             <ColumnDefinition Width="1*"/>
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Column="0" Text="{Binding NameFile}" TextTrimming="CharacterEllipsis" MaxWidth="200" VerticalAlignment="Center" Margin="0, 0, 10, 0"/>
+                        <TextBlock Grid.Column="0" Text="{Binding NameFile}" TextTrimming="CharacterEllipsis" MinWidth="200" VerticalAlignment="Center" Margin="0, 0, 10, 0"/>
 
                         <ProgressBar Grid.Column="1" Height="20" MinWidth="400" VerticalAlignment="Center" Value="{Binding Progress}" Maximum="100"/>
 
