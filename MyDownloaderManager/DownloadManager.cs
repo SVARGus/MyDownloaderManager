@@ -264,7 +264,7 @@ namespace MyDownloaderManager
             }
         }
 
-        private void SaveStorage()
+        public void SaveStorage()
         {
             lock (_sync)
             {

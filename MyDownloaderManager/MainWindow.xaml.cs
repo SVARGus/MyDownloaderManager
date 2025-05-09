@@ -26,12 +26,21 @@ public partial class MainWindow : Window
         AboutDownloaderFile.IsEnabled = false;
     }
 
-    private async Task ButtonStartDownloading_Click(object sender, RoutedEventArgs e)
+    private async void ButtonStartDownloading_Click(object sender, RoutedEventArgs e)
     {
         var url = TextBoxUrl.Text.Trim();
         var path = TextBoxFilePath.Text.Trim();
         var name = TextBoxFileName.Text.Trim();
         var tags = TextBoxTags.Text.Split(new[] { ',', ';', ' '}, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+
+        if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(path) || string.IsNullOrEmpty(name))
+        {
+            MessageBox.Show("Заполните URL, путь и имя файла",
+                "Ошибка",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
 
         _manager.AddDownload(url, path, name, tags);
 
@@ -44,12 +53,35 @@ public partial class MainWindow : Window
 
     private void ButtonMove_Click(object sender, RoutedEventArgs e)
     {
+        if (!(AboutDownloaderFile.DataContext is DownloadItem item)) return;
 
+        var dlg = new CommonOpenFileDialog
+        {
+            IsFolderPicker = true,
+            Title = "Выберите новую папку для файла"
+        };
+        if (dlg.ShowDialog() == CommonFileDialogResult.Ok)
+        {
+            _manager.MoveFile(item.Id, dlg.FileName);
+            ListBoxDownloads.Items.Refresh();
+            AboutDownloaderFile.DataContext = item;
+        }
     }
 
     private void ButtonRename_Click(object sender, RoutedEventArgs e)
     {
+        if (!(AboutDownloaderFile.DataContext is DownloadItem item))
+        {
+            return;
+        }
 
+        var dlg = new RenameWindow(item.NameFile);
+        if (dlg.ShowDialog() == true)
+        {
+            _manager.RenameFile(item.Id, dlg.NewName);
+            ListBoxDownloads.Items.Refresh();
+            AboutDownloaderFile.DataContext = item;
+        }
     }
 
     private void ButtonSelectDirectory_Click(object sender, RoutedEventArgs e)
@@ -68,21 +100,80 @@ public partial class MainWindow : Window
 
     private void ButtonPause_Click(object sender, RoutedEventArgs e)
     {
-
+        if (TryGetItemFromSender(sender, out var item))
+        {
+            _manager.PauseDownload(item.Id);
+            ListBoxDownloads.Items.Refresh();
+        }
     }
 
     private void ButtonResume_Click(object sender, RoutedEventArgs e)
     {
-
+        if (TryGetItemFromSender(sender, out var item))
+        {
+            Task.Run(async () =>
+            {
+                await _manager.StartDownloadAsync(item.Id);
+                Dispatcher.Invoke(() => ListBoxDownloads.Items.Refresh());
+            });
+        }
     }
 
     private void ButtonDelete_Click(object sender, RoutedEventArgs e)
     {
+        if (TryGetItemFromSender(sender, out var item))
+        {
+            var result = MessageBox.Show(
+                "Удалить информацию о загрузке или вместе с файлом?\n\nДа — только информацию\nНет — вместе с файлом",
+                "Подтвердите удаление",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Question);
 
+            if (result == MessageBoxResult.Cancel)
+            {
+                return;
+            }
+
+            bool deleteFile = (result == MessageBoxResult.No);
+            _manager.RemoveDownload(item.Id, deleteFile);
+            ListBoxDownloads.Items.Refresh();
+            AboutDownloaderFile.DataContext = null;
+            AboutDownloaderFile.IsEnabled = false;
+        }
     }
 
     private void ButtonRestart_Click(object sender, RoutedEventArgs e)
     {
+        if (TryGetItemFromSender(sender, out var item))
+        {
+            item.Status = DownloadStatus.Pending;
+            item.Progress = 0;
+            _manager.SaveStorage();
+            ListBoxDownloads.Items.Refresh();
 
+            Task.Run(async () =>
+            {
+                await _manager.StartDownloadAsync(item.Id);
+                Dispatcher.Invoke(() => ListBoxDownloads.Items.Refresh());
+            });
+        }
+    }
+
+    private bool TryGetItemFromSender(object sender, out DownloadItem? item)
+    {
+        item = null;
+        if (sender is FrameworkElement fe && fe.DataContext is DownloadItem di)
+        {
+            item = di;
+            return true;
+        }
+        return false;
+    }
+
+    private void ListBoxDownloads_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var selected = ListBoxDownloads.SelectedItem as DownloadItem;
+        AboutDownloaderFile.DataContext = selected;
+        AboutDownloaderFile.IsEnabled = selected != null;
     }
 }
