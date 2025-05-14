@@ -7,26 +7,10 @@
         mc:Ignorable="d"
         Title="Downloader Manager" Height="600" Width="1200"
         xmlns:sys="clr-namespace:System;assembly=mscorlib">
-    <!--<Window.Resources>
-        --><!-- Тестовый экземпляр DownloadItem для дизайна --><!--
-        <local:DownloadItem x:Key="SampleItem"
-                            Url="https://example.com/video.mp4"
-                            FilePath="C:\Downloads"
-                            NameFile="video.mp4"
-                            Status="Downloading"
-                            StartLoading="2025-05-08T15:30:00"
-                            EndLoading="2025-05-08T15:35:04">
-            <local:DownloadItem.Tags>
-                <sys:String>video</sys:String>
-                <sys:String>mp4</sys:String>
-                <sys:String>demo</sys:String>
-            </local:DownloadItem.Tags>
-        </local:DownloadItem>
-    </Window.Resources>-->
-    
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="1*"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="2*"/>
             <RowDefinition Height="2*"/>
         </Grid.RowDefinitions>
@@ -47,27 +31,37 @@
                 
                 <TextBlock Grid.Column="0" Grid.Row="0" Text="URL ссылка: " HorizontalAlignment="Right" VerticalAlignment="Center" 
                            FontSize="24" FontWeight="Bold" Margin="5"/>
-                <TextBox Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="2" Width="450" Height="40" Margin="5" x:Name="TextBoxUrl"/>
+                <TextBox Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="2" Width="450" Margin="5" x:Name="TextBoxUrl"
+                         FontSize="18" Height="50" TextWrapping="Wrap"/>
                 
                 <TextBlock Grid.Column="0" Grid.Row="1" Text="Дириктория сохранения: " HorizontalAlignment="Right" VerticalAlignment="Center" 
                            FontSize="24" FontWeight="Bold" Margin="5"/>
-                <TextBox Grid.Column="1" Grid.Row="1" Width="400" Height="40" Margin="5" x:Name="TextBoxFilePath"/>
+                <TextBox Grid.Column="1" Grid.Row="1" Width="400" Margin="5" x:Name="TextBoxFilePath"
+                         FontSize="18" Height="50" TextWrapping="Wrap"/>
                 <Button Grid.Column="2" Grid.Row="1" Content="Выбрать" x:Name="ButtonSelectDirectory" Click="ButtonSelectDirectory_Click"/>
 
                 <TextBlock Grid.Column="3" Grid.Row="0" Text="Название файла" HorizontalAlignment="Right" VerticalAlignment="Center" 
                            FontSize="24" FontWeight="Bold" Margin="5"/>
-                <TextBox Grid.Column="4" Grid.Row="0" Width="400" Height="40" Margin="5" x:Name="TextBoxFileName"/>
+                <TextBox Grid.Column="4" Grid.Row="0" Width="400" Margin="5" x:Name="TextBoxFileName"
+                         FontSize="18" Height="50" TextWrapping="Wrap"/>
 
                 <TextBlock Grid.Column="3" Grid.Row="1" Text="Тэги: " HorizontalAlignment="Center" VerticalAlignment="Center"
                            FontSize="24" FontWeight="Bold" Margin="5"/>
-                <TextBox Grid.Column="4" Grid.Row="1" Width="400" Height="40" Margin="5" x:Name="TextBoxTags"/>
+                <TextBox Grid.Column="4" Grid.Row="1" Width="400" Margin="5" x:Name="TextBoxTags"
+                         FontSize="18" Height="50" TextWrapping="Wrap"/>
 
                 <Button Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="5" Content="Начать скачивание" FontSize="24" 
                         FontWeight="Bold" Width="300" Margin="5" x:Name="ButtonStartDownloading" Click="ButtonStartDownloading_Click" />
             </Grid>
         </Viewbox>
 
-        <ListBox x:Name="ListBoxDownloads" Grid.Row="1" Margin="10" ItemsSource="{Binding Items}"
+        <StackPanel Orientation="Horizontal" Margin="10" Grid.Row="1">
+            <TextBox x:Name="TextBoxSearchTag" Width="200" ToolTip="Введите тег..." Margin="0,0,10,0"/>
+            <Button Content="Поиск" Click="ButtonSearch_Click"/>
+            <Button Content="Сброс" Click="ButtonClearSearch_Click" Margin="5,0,0,0"/>
+        </StackPanel>
+
+        <ListBox x:Name="ListBoxDownloads" Grid.Row="2" Margin="10" ItemsSource="{Binding Items}"
                  SelectionChanged="ListBoxDownloads_SelectionChanged">
             <ListBox.ItemTemplate>
                 <DataTemplate>
@@ -85,11 +79,47 @@
 
                         <ProgressBar Grid.Column="1" Height="20" MinWidth="400" VerticalAlignment="Center" Value="{Binding Progress}" Maximum="100"/>
 
-                        <Button Grid.Column="2" Margin="5,0" Padding="5" Content="⏸" ToolTip="Пауза" x:Name="ButtonPause" Click="ButtonPause_Click"/>
+                        <Button Grid.Column="2" Margin="5,0" Padding="5" Content="⏸" ToolTip="Пауза" x:Name="ButtonPause" Click="ButtonPause_Click">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Status}" Value="Downloading">
+                                            <Setter Property="IsEnabled" Value="True"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Status}" Value="Paused">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
 
-                        <Button Grid.Column="3" Margin="5,0" Padding="5" Content="▶" ToolTip="Возобновить" x:Name="ButtonResume" Click="ButtonResume_Click"/>
+                        <Button Grid.Column="3" Margin="5,0" Padding="5" Content="▶" ToolTip="Возобновить" x:Name="ButtonResume" Click="ButtonResume_Click">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Status}" Value="Paused">
+                                            <Setter Property="IsEnabled" Value="True"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
 
-                        <Button Grid.Column="4" Margin="5,0" Padding="5" Content="🗑" ToolTip="Удалить" x:Name="ButtonDelete" Click="ButtonDelete_Click"/>
+                        <Button Grid.Column="4" Margin="5,0" Padding="5" Content="🗑" ToolTip="Удалить" x:Name="ButtonDelete" Click="ButtonDelete_Click">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="IsEnabled" Value="True"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Status}" Value="Downloading">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
 
                         <Button Grid.Column="5" Margin="5,0" Padding="5" Content="⟳" ToolTip="Перезапустить" x:Name="ButtonRestart" Click="ButtonRestart_Click"/>
                     </Grid>
@@ -97,7 +127,7 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <Viewbox Grid.Row="2" x:Name="AboutDownloaderFile"> <!--d:DataContext="{StaticResource SampleItem}"-->
+        <Viewbox Grid.Row="3" x:Name="AboutDownloaderFile">
             <Border Padding="10" Width="1000">
                 <StackPanel>
                     <TextBlock Text="Информация о файле" FontSize="20" FontWeight="Bold" Margin="0, 0, 0, 10"/>
@@ -152,8 +182,31 @@
                     </Grid>
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button x:Name="ButtonRename" Content="Переименовать" Margin="5" Padding="10,5" Width="150" IsEnabled="True" Click="ButtonRename_Click"/>
-                        <Button x:Name="ButtonMove" Content="Переместить" Margin="5" Padding="10,5" Width="150" IsEnabled="True" Click="ButtonMove_Click"/>
+                        <Button Content="Добавить тег" x:Name="ButtonAddTag" Click="ButtonAddTag_Click" Margin="5" Padding="10,5" Width="150"/>
+                        <Button x:Name="ButtonRename" Content="Переименовать" Margin="5" Padding="10,5" Width="150" IsEnabled="True" Click="ButtonRename_Click">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="IsEnabled" Value="True"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Status}" Value="Downloading">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button x:Name="ButtonMove" Content="Переместить" Margin="5" Padding="10,5" Width="150" IsEnabled="True" Click="ButtonMove_Click">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="IsEnabled" Value="True"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Status}" Value="Downloading">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
                     </StackPanel>
                 </StackPanel>
             </Border>

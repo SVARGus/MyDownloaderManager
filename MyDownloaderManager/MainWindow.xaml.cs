@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -8,22 +9,25 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-using System.Windows.Shapes;
 using Microsoft.Win32;
 using Microsoft.WindowsAPICodePack.Dialogs;
+using System.IO;
+using System.ComponentModel;
+using System.Collections.ObjectModel;
 
 namespace MyDownloaderManager;
 
 public partial class MainWindow : Window
 {
     private readonly DownloadManager _manager;
+    private ICollectionView? _view;
 
     public MainWindow()
     {
         InitializeComponent();
         _manager = new DownloadManager(maxCouncurrentDownloads: 6);
-        ListBoxDownloads.ItemsSource = _manager.Items;
-        AboutDownloaderFile.IsEnabled = false;
+        _view = CollectionViewSource.GetDefaultView(_manager.Items);
+        ListBoxDownloads.ItemsSource = _view;
     }
 
     private async void ButtonStartDownloading_Click(object sender, RoutedEventArgs e)
@@ -42,7 +46,28 @@ public partial class MainWindow : Window
             return;
         }
 
-        _manager.AddDownload(url, path, name, tags);
+        if (_manager.Items.Any(x => x.FilePath == path && x.NameFile.Equals(name, StringComparison.OrdinalIgnoreCase)))
+        {
+            MessageBox.Show("Загрузка с таким именем и путём уже есть.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        // Авто‑добавление расширения, если его нет
+        if (!Path.HasExtension(name))
+        {
+            var ext = Path.GetExtension(new Uri(url).AbsolutePath);
+            if (!string.IsNullOrEmpty(ext))
+            {
+                name += ext;
+            }
+            else
+            {
+                MessageBox.Show("Укажите расширение файла.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+        }
+
+            _manager.AddDownload(url, path, name, tags);
 
         ListBoxDownloads.Items.Refresh();
 
@@ -142,20 +167,36 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ButtonRestart_Click(object sender, RoutedEventArgs e)
+    private async void ButtonRestart_Click(object sender, RoutedEventArgs e)
     {
-        if (TryGetItemFromSender(sender, out var item))
-        {
-            item.Status = DownloadStatus.Pending;
-            item.Progress = 0;
-            _manager.SaveStorage();
-            ListBoxDownloads.Items.Refresh();
+        if (!TryGetItemFromSender(sender, out var item)) return;
 
-            Task.Run(async () =>
-            {
-                await _manager.StartDownloadAsync(item.Id);
-                Dispatcher.Invoke(() => ListBoxDownloads.Items.Refresh());
-            });
+        var fullPath = Path.Combine(item.FilePath, item.NameFile);
+        if (File.Exists(fullPath))
+        {
+            var dlg = MessageBox.Show(
+                $"Файл уже существует:\n{fullPath}\n\nУдалить и перезапустить?",
+                "Подтверждение",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            if (dlg == MessageBoxResult.Yes)
+                File.Delete(fullPath);
+            else
+                return;
+        }
+
+        item.Progress = 0;
+        item.Status = DownloadStatus.Pending;
+        item.StartLoading = default;
+        item.EndLoading = default;
+
+        try
+        {
+            await _manager.StartDownloadAsync(item.Id);
+        }
+        catch (HttpRequestException ex)
+        {
+            MessageBox.Show($"Ошибка загрузки: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -175,5 +216,32 @@ public partial class MainWindow : Window
         var selected = ListBoxDownloads.SelectedItem as DownloadItem;
         AboutDownloaderFile.DataContext = selected;
         AboutDownloaderFile.IsEnabled = selected != null;
+    }
+
+    private void ButtonSearch_Click(object sender, RoutedEventArgs e)
+    {
+        var tag = TextBoxSearchTag.Text.Trim();
+        if (_view == null) return;
+        _view.Filter = o => ((DownloadItem)o).Tags.Contains(tag, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private void ButtonClearSearch_Click(object sender, RoutedEventArgs e)
+    {
+        if (_view == null) return;
+        _view.Filter = null;
+    }
+
+    private void ButtonAddTag_Click(object sender, RoutedEventArgs e)
+    {
+        if (!(AboutDownloaderFile.DataContext is DownloadItem item))
+        {
+            return;
+        }
+        var input = Microsoft.VisualBasic.Interaction.InputBox(
+           "Введите новый тег:", "Добавить тег", "");
+        if (!string.IsNullOrWhiteSpace(input))
+        {
+            item.Tags.Add(input.Trim());
+        }
     }
 }

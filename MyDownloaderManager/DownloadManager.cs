@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -20,7 +21,7 @@ namespace MyDownloaderManager
         private readonly DownloadStorage _storage;
         private readonly object _sync = new object();
 
-        public List<DownloadItem> Items { get; private set; }
+        public ObservableCollection<DownloadItem> Items { get; }
 
         public DownloadManager(int maxCouncurrentDownloads)
         {
@@ -28,7 +29,7 @@ namespace MyDownloaderManager
             _httpClient = new HttpClient();
             _cstDictionary = new ConcurrentDictionary<Guid, CancellationTokenSource>();
             _storage = new DownloadStorage();
-            Items = _storage.Load();
+            Items = new ObservableCollection<DownloadItem>(_storage.Load());
         }
 
         public void AddDownload(string url, string filePath, string fileName, IEnumerable<string> tags)
@@ -268,7 +269,7 @@ namespace MyDownloaderManager
         {
             lock (_sync)
             {
-                _storage.Save(Items);
+                _storage.Save(Items.ToList());
             }
         }
     }
